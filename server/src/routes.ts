@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import { streamSSE } from 'hono/streaming';
+import { deleteCookie, getCookie, setCookie } from 'hono/cookie';
 import { db, now } from './db.js';
 import { env } from './env.js';
 import { newId } from './lib/ids.js';
@@ -43,12 +44,19 @@ function createBot(userId: string, b: { name: string; label?: string; descriptio
   return getBot(id)!;
 }
 
+function mayCreateAccount(email: string) {
+  const e = email.trim().toLowerCase();
+  if (!env.allowedEmails.length) return env.openSignup;
+  return env.allowedEmails.some((a) => (a.startsWith('@') ? e.endsWith(a) : e === a));
+}
+
 function findOrCreateUser(email: string, name?: string, preferId?: string) {
   const existing = db.prepare('SELECT * FROM users WHERE lower(email)=lower(?)').get(email) as any;
   if (existing) return { id: existing.id as string, isNew: false };
+  if (!mayCreateAccount(email)) return null;
   const id = preferId ?? newId('usr');
   db.prepare('INSERT INTO users(id,email,name,created_at) VALUES (?,?,?,?)').run(id, email, name ?? email.split('@')[0], now());
-  createBot(id, { name: 'Quinn', label: 'Chief of Staff', description: 'Your main point of contact. Checks in proactively and coordinates work with your other Bots.', avatarShape: 'blob', avatarColor: 'black', isPrimary: true });
+  createBot(id, { name: 'Quinn', label: 'Chief of Staff', description: 'Your first stop for anything. Sends a short update at the times you pick and hands work to your other Bots.', avatarShape: 'blob', avatarColor: 'black', isPrimary: true });
   return { id, isNew: true };
 }
 
@@ -59,24 +67,44 @@ api.get('/auth/me', (c) => {
   return c.json({ user, devLogin: env.devLogin });
 });
 
+// Sign-in attempts are bound to the browser that started them (a short-lived cookie), so a callback URL
+// can't be replayed in someone else's browser, and they expire after LOGIN_TTL_MS.
+const LOGIN_COOKIE = 'login_attempt';
+const LOGIN_TTL_MS = 15 * 60_000;
+
 api.get('/auth/google/start', async (c) => {
+  db.prepare('DELETE FROM login_attempts WHERE created_at < ?').run(now() - LOGIN_TTL_MS);
   const attemptId = newId('login');
   const provisional = newId('usr');
   const cb = `${env.serverUrl}/api/auth/google/callback?attempt=${attemptId}`;
   const { redirectUrl, connectedAccountId } = await startGoogleLogin(provisional, cb);
-  db.prepare('INSERT INTO login_attempts(id,provisional_user_id,connected_account_id,created_at) VALUES (?,?,?,?)').run(attemptId, provisional, connectedAccountId ?? null, now());
+  if (!connectedAccountId) return c.redirect(`${env.appUrl}/?login=failed`);
+  db.prepare('INSERT INTO login_attempts(id,provisional_user_id,connected_account_id,created_at) VALUES (?,?,?,?)').run(attemptId, provisional, connectedAccountId, now());
+  setCookie(c, LOGIN_COOKIE, attemptId, { httpOnly: true, secure: env.secureCookies, sameSite: 'Lax', path: '/api/auth/google', maxAge: LOGIN_TTL_MS / 1000 });
   return c.redirect(redirectUrl);
 });
 
 api.get('/auth/google/callback', async (c) => {
-  const attempt = db.prepare('SELECT * FROM login_attempts WHERE id=?').get(c.req.query('attempt') ?? '') as any;
-  const caId = c.req.query('connected_account_id') ?? attempt?.connected_account_id;
-  if (!attempt || c.req.query('status') === 'failed' || !caId) return c.redirect(`${env.appUrl}/?login=failed`);
-  if (attempt.connected_account_id && caId !== attempt.connected_account_id) return c.redirect(`${env.appUrl}/?login=failed`);
+  const attemptId = c.req.query('attempt') ?? '';
+  const boundTo = getCookie(c, LOGIN_COOKIE);
+  deleteCookie(c, LOGIN_COOKIE, { path: '/api/auth/google' });
+  const attempt = boundTo === attemptId ? (db.prepare('SELECT * FROM login_attempts WHERE id=?').get(attemptId) as any) : null;
+  // Only trust the connected account recorded when this attempt started, never one from the query string.
+  const caId: string | undefined = attempt?.connected_account_id ?? undefined;
+  const fresh = attempt && now() - attempt.created_at < LOGIN_TTL_MS;
+  if (!attempt || !fresh || c.req.query('status') === 'failed' || !caId) return c.redirect(`${env.appUrl}/?login=failed`);
+  const returned = c.req.query('connected_account_id');
+  if (returned && returned !== caId) return c.redirect(`${env.appUrl}/?login=failed`);
   db.prepare('DELETE FROM login_attempts WHERE id=?').run(attempt.id);
   try {
     const profile = await googleProfile(caId);
-    const { id, isNew } = findOrCreateUser(profile.email, profile.name, attempt.provisional_user_id);
+    const found = findOrCreateUser(profile.email, profile.name, attempt.provisional_user_id);
+    if (!found) {
+      console.warn('[auth] sign-up refused (not in ALLOWED_EMAILS)');
+      await deleteConnection(caId);
+      return c.redirect(`${env.appUrl}/?login=failed`);
+    }
+    const { id, isNew } = found;
     // Existing user: the Gmail connection made for sign-in belongs to a throwaway id; remove it.
     if (!isNew && id !== attempt.provisional_user_id) await deleteConnection(caId);
     createSession(c, id);
@@ -91,8 +119,9 @@ api.post('/auth/dev', async (c) => {
   if (!env.devLogin) return c.json({ error: 'disabled' }, 403);
   const { email, name } = await c.req.json<{ email: string; name?: string }>();
   if (!email?.includes('@')) return c.json({ error: 'email required' }, 400);
-  const { id } = findOrCreateUser(email, name);
-  createSession(c, id);
+  const found = findOrCreateUser(email, name);
+  if (!found) return c.json({ error: 'This email is not allowed to sign up (ALLOWED_EMAILS).' }, 403);
+  createSession(c, found.id);
   return c.json({ ok: true });
 });
 
@@ -374,18 +403,18 @@ api.get('/apps/callback', async (c) => {
     const connected = await connectedToolkits(userId).catch(() => new Set<string>());
     if (connected.has(slug)) {
       hub.emit(userId, { type: 'connections' });
-      if (botId && ownBot(userId, botId)) {
+      // Resume the Bot only for the pending connect card that started this flow, so a replayed or
+      // forged callback URL can't start extra (paid) turns.
+      const row = botId && seq && ownBot(userId, botId) ? getRow(botId, seq) : null;
+      if (botId && row?.body.type === 'card' && row.body.card === 'connect' && row.body.status === 'pending' && row.body.toolkit === slug) {
         const info = await toolkitInfo(slug);
-        if (seq) {
-          const row = getRow(botId, seq);
-          if (row?.body.type === 'card' && row.body.card === 'connect') updateRow(botId, seq, { ...row.body, status: 'connected' });
-        }
+        updateRow(botId, row.seq, { ...row.body, status: 'connected' });
         enqueue(botId, { type: 'system', text: `The user connected ${info?.name ?? slug}. Continue with what you were doing.` });
       }
     }
   }
   // Data embedded in an inline <script> must not be able to close the tag, so escape `<` (and U+2028/2029).
-  const payload = jsonForScript({ type: 'grokbot-connected', slug, ok });
+  const payload = jsonForScript({ type: 'teammates-connected', slug, ok });
   const target = jsonForScript(new URL(env.appUrl).origin);
   c.header('Cache-Control', 'no-store');
   c.header('X-Content-Type-Options', 'nosniff');
