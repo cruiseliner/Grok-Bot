@@ -4,6 +4,7 @@ import { Hono } from 'hono';
 import { csrf } from 'hono/csrf';
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import type { Server } from 'node:http';
 import { appEnv, env } from './env.js';
 import { api } from './routes.js';
@@ -36,10 +37,15 @@ app.route('/api', api);
 app.route('/api', rosterApi);
 app.route('/api', configApi);
 
-// Serve the built web app in production.
-const webDist = path.resolve(new URL('.', import.meta.url).pathname, '../../web/dist');
+// Serve the built web app in production. fileURLToPath matters on Windows:
+// URL.pathname starts with /C: and then the page is never found (404).
+const webDist = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../web/dist');
+console.log(`[teammates] web ${fs.existsSync(webDist) ? 'ok' : 'missing'} ${webDist}`);
 if (fs.existsSync(webDist)) {
-  app.use('/*', serveStatic({ root: path.relative(process.cwd(), webDist) }));
+  app.use('/*', serveStatic({
+    root: webDist,
+    rewriteRequestPath: (p) => p.replace(/^\/+/, ''),
+  }));
   app.get('*', (c) => c.html(fs.readFileSync(path.join(webDist, 'index.html'), 'utf8')));
 }
 
