@@ -20,15 +20,27 @@ jobs:
           cache: npm
 
       - name: Install and build
+        shell: pwsh
         run: |
-          npm ci
+          $ErrorActionPreference = 'Stop'
+          # better-sqlite3 13 ships prebuilds/win32-x64.node. npm still tries to
+          # compile it, and node-gyp cannot read Visual Studio 18 on this runner.
+          npm ci --ignore-scripts
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          if (-not (Test-Path node_modules/better-sqlite3/prebuilds/win32-x64.node)) {
+            Write-Error 'The Windows database binary is missing from better-sqlite3.'
+            exit 1
+          }
           npm run build
-          npm prune --omit=dev
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          npm prune --omit=dev --ignore-scripts
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           if (Test-Path node_modules/@orgo-teammates) { Remove-Item -Recurse -Force node_modules/@orgo-teammates }
 
       - name: Bundle the same Node that built native modules
         shell: pwsh
         run: |
+          $ErrorActionPreference = 'Stop'
           $ver = (node -p "process.version")
           $name = "node-$ver-win-x64"
           Invoke-WebRequest "https://nodejs.org/dist/$ver/$name.zip" -OutFile node.zip
@@ -38,9 +50,13 @@ jobs:
 
       - name: Package the window
         working-directory: desktop
+        shell: pwsh
         run: |
+          $ErrorActionPreference = 'Stop'
           npm ci
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           npx electron-builder --win nsis --x64
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - uses: actions/upload-artifact@v4
         with:
