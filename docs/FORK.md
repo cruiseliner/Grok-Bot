@@ -34,4 +34,13 @@ Looked at for ideas only. No source from these trees is in this repository.
 | [Rakazo](https://github.com/elie222/rakazo) | Self-hosted web, desktop, and phone clients over one API | Their server and clients |
 | [superbot](https://github.com/davidondrej/superbot) | Named teammates with a shape and a color | Their Rust runtime |
 
-Official Grok Bot stays a closed product. A copy of that account, its computer, or its chats is not possible from this repo and is not a goal.
+## Catalogs, and what came back into this repo
+
+Reviewed as lists, not as code to vendor:
+
+- [ZeroPointRepo/awesome-grok-bot](https://github.com/ZeroPointRepo/awesome-grok-bot) — skills, plugins, and MCP servers. Useful as a map. This fork does not ship those plugins. Connected apps stay on Composio, which the runtime already has. Their security note stands: treat a shared bot, skill, or plugin as untrusted until you read it.
+- [divo12/awesome-grok-bot-templates](https://github.com/divo12/awesome-grok-bot-templates) — public xAI share links plus long operating prompts. Those links are someone else's hosted bots. They are not imported.
+
+What was written here from that review: [teams/personal-crew.md](../teams/personal-crew.md). It is a five-bot card (chief of staff, research, inbox, spend watch, review) in this repo's own team-card format. Import it from Account. It does not copy those prompts, and it does not include chats, memories, keys, or computer access.
+
+Delegation stays short on purpose. Ada assigns one owner and states the outcome, why it matters, the scope, and what done looks like. Sends, payments, deletes, and deploys wait for the user. That matches how this runtime already pauses write tools.
