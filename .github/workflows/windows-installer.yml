@@ -1,0 +1,49 @@
+name: Windows installer
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  installer:
+    runs-on: windows-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install and build
+        run: |
+          npm ci
+          npm run build
+          npm prune --omit=dev
+          if (Test-Path node_modules/@orgo-teammates) { Remove-Item -Recurse -Force node_modules/@orgo-teammates }
+
+      - name: Bundle the same Node that built native modules
+        shell: pwsh
+        run: |
+          $ver = (node -p "process.version")
+          $name = "node-$ver-win-x64"
+          Invoke-WebRequest "https://nodejs.org/dist/$ver/$name.zip" -OutFile node.zip
+          Expand-Archive node.zip -DestinationPath node-dist
+          New-Item -ItemType Directory -Force desktop/vendor | Out-Null
+          Copy-Item "node-dist/$name/node.exe" desktop/vendor/node.exe
+
+      - name: Package the window
+        working-directory: desktop
+        run: |
+          npm ci
+          npx electron-builder --win nsis --x64
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Cruiseliner-Windows
+          path: desktop/release/*.exe
+          if-no-files-found: error

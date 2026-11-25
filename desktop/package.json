@@ -1,0 +1,43 @@
+{
+  "name": "cruiseliner-desktop",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Desktop window for Cruiseliner's Grok-Bot. Not the official Grok Bot app.",
+  "main": "main.cjs",
+  "author": "cruiseliner",
+  "scripts": {
+    "start": "electron .",
+    "dist:win": "electron-builder --win nsis --x64"
+  },
+  "devDependencies": {
+    "electron": "^35.7.5",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.cruiseliner.grokbot",
+    "productName": "Cruiseliner",
+    "copyright": "MIT. Fork of Orgo Teammates (Nick Vasilescu). Not affiliated with xAI.",
+    "asar": true,
+    "npmRebuild": false,
+    "directories": { "output": "release" },
+    "files": ["main.cjs", "preload.cjs", "setup.html"],
+    "extraResources": [
+      { "from": "vendor/node.exe", "to": "node.exe" },
+      { "from": "../server/dist", "to": "server/dist" },
+      { "from": "../server/package.json", "to": "server/package.json" },
+      { "from": "../web/dist", "to": "web/dist" },
+      { "from": "../node_modules", "to": "node_modules" }
+    ],
+    "win": {
+      "target": [{ "target": "nsis", "arch": ["x64"] }],
+      "signAndEditExecutable": false
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": false,
+      "artifactName": "Cruiseliner-Setup.${ext}",
+      "shortcutName": "Cruiseliner"
+    }
+  }
+}
