@@ -60,7 +60,12 @@ export function ChatView() {
               <Icon name="sidebar" opacity={0.66} style={{ transform: 'scaleX(-1)' }} />
             </button>
           )}
-          <button type="button" className="share-btn" onClick={() => flash('Sharing isn’t available yet')}>Share</button>
+          <button type="button" className="share-btn" onClick={() => {
+            api.exportTeam().then(async ({ markdown }) => {
+              await navigator.clipboard.writeText(markdown);
+              flash('Team card copied \u2014 names and instructions only');
+            }).catch((e) => flash(e.message));
+          }}>Share</button>
         </div>
       </header>
       {toast && <div className="toast" role="status">{toast}</div>}

@@ -1,7 +1,7 @@
 {
   "name": "orgo-teammates",
   "private": true,
-  "description": "Orgo Teammates: an open-source take on always-on AI teammates, built on public APIs (xAI, Orgo, Composio). Independent project, not affiliated with or endorsed by xAI.",
+  "description": "Cruiseliner Grok-Bot: self-hosted AI teammates on your own machine. Fork of Orgo Teammates (MIT, Nick Vasilescu). Not affiliated with xAI.",
   "workspaces": ["server", "web"],
   "scripts": {
     "dev": "npm run dev -w server & npm run dev -w web",

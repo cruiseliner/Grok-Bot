@@ -54,6 +54,12 @@ export const api = {
   roomMembers: (id: string) => req<{ members: RoomMember[] }>('GET', `/rooms/${id}/members`),
   setRoomMembers: (id: string, botIds: string[]) => req<{ ok: true; members: string[] }>('PUT', `/rooms/${id}/members`, { botIds }),
   createRoom: (name: string, botIds: string[]) => req<{ id: string }>('POST', '/rooms', { name, botIds }),
+
+  patchBot: (id: string, patch: Partial<Pick<Bot, 'pinned' | 'name' | 'label' | 'instructions' | 'effort'>>) => req<{ bot: Bot }>('PATCH', `/bots/${id}`, patch),
+  duplicateBot: (id: string) => req<{ bot: Bot }>('POST', `/bots/${id}/duplicate`),
+  hideBot: (id: string) => req<{ ok: true }>('POST', `/bots/${id}/hide`),
+  exportTeam: () => req<{ markdown: string }>('GET', '/team'),
+  importTeam: (markdown: string) => req<{ created: string[]; skipped: string[] }>('POST', '/team/import', { markdown }),
 };
 
 let connectPopup: Window | null = null;
