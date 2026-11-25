@@ -43,4 +43,6 @@ Reviewed as lists, not as code to vendor:
 
 What was written here from that review: [teams/personal-crew.md](../teams/personal-crew.md). It is a five-bot card (chief of staff, research, inbox, spend watch, review) in this repo's own team-card format. Import it from Account. It does not copy those prompts, and it does not include chats, memories, keys, or computer access.
 
+The Windows window in [desktop/](../desktop/) is also original. It starts this server and opens it. It is not MausBot's installer and not the official Grok Bot app. A graphics card is not used. See [DESKTOP.md](DESKTOP.md).
+
 Delegation stays short on purpose. Ada assigns one owner and states the outcome, why it matters, the scope, and what done looks like. Sends, payments, deletes, and deploys wait for the user. That matches how this runtime already pauses write tools.
