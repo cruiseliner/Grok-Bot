@@ -10,7 +10,12 @@ export function SignIn() {
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(() => (new URLSearchParams(location.search).get('login') === 'failed' ? 'Sign-in didn’t finish. Try again.' : null));
+  const [error, setError] = useState<string | null>(() => {
+    const reason = new URLSearchParams(location.search).get('login');
+    if (reason === 'needs-composio') return 'Google sign-in needs a Composio key. Use your email below, or add that key from the Keys menu.';
+    if (reason === 'failed') return 'Sign-in did not finish. Try again, or use your email.';
+    return null;
+  });
 
   const dev = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,7 +38,7 @@ export function SignIn() {
         </a>
         {devLogin && (
           <form className="signin__dev" onSubmit={dev}>
-            <div className="signin__divider"><span>Dev sign-in</span></div>
+            <div className="signin__divider"><span>Sign in with email</span></div>
             <input className="text-input" type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} aria-label="Email" />
             <input className="text-input" placeholder="Name (optional)" value={name} onChange={(e) => setName(e.target.value)} aria-label="Name" />
             <button type="submit" className="btn btn--secondary" disabled={busy}>{busy ? 'Signing in…' : 'Continue with email'}</button>
