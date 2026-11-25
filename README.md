@@ -13,10 +13,10 @@
   <a href="docs/ARCHITECTURE.md">Architecture</a> ·
   <a href="#development">Development</a> ·
   <a href="SECURITY.md">Security</a> ·
-  <a href="https://github.com/nickvasilescu/orgo-teammates/issues">Issues</a>
+  <a href="https://github.com/cruiseliner/Grok-Bot/issues">Issues</a>
 </p>
 
-> Independent, unofficial open-source project. Not affiliated with or endorsed by xAI or any other company named here. See the [disclaimer](#disclaimer).
+> Maintained by [@cruiseliner](https://github.com/cruiseliner) as **Grok-Bot**. This repository started as a branch of [Orgo Teammates](https://github.com/nickvasilescu/orgo-teammates) by Nick Vasilescu (MIT). The original copyright stays in [LICENSE](LICENSE). Independent project. Not affiliated with or endorsed by xAI. See the [disclaimer](#disclaimer) and [docs/FORK.md](docs/FORK.md).
 
 ---
 
@@ -33,6 +33,10 @@ Orgo Teammates is a self-hosted runtime for these AI teammates that you can run 
 - **Keep work moving.** Schedule routines, react to app events, and have your primary Bot send check-ins at times you choose.
 - **Keep context.** Bots retain durable memories, recall earlier facts, and compact long conversations.
 - **Talk it through.** Realtime voice calls hand tasks to the same Bot runtime. Voice selection, speed, previews, and push-to-talk dictation are included.
+- **Treat the roster like a chat list.** Right-click a Bot to pin it, duplicate its job (instructions and skills only, not the chat or its memories), copy its id, or hide it. The primary Bot cannot be hidden.
+- **Hand someone a team card.** Share, or Account then Copy team card, copies names, roles, and instructions as Markdown. Import that card to add the missing Bots. A starter crew is in [teams/personal-crew.md](teams/personal-crew.md). The card never includes chats, memories, keys, or computer access.
+
+What this fork does **not** take from other projects: no code from OpenMausBot, Rakazo, superbot, or the official Grok Bot app. Those products are different codebases. See [docs/FORK.md](docs/FORK.md).
 
 Each user's Bots share one Orgo VM, with up to four separate Bot desktops active at once. Idle computers can sleep and wake when needed.
 
@@ -43,8 +47,8 @@ Each user's Bots share one Orgo VM, with up to four separate Bot desktops active
 Install **Node.js 22.22 or newer**, then:
 
 ```bash
-git clone https://github.com/nickvasilescu/orgo-teammates.git
-cd orgo-teammates
+git clone https://github.com/cruiseliner/Grok-Bot.git
+cd Grok-Bot
 npm ci
 cp .env.example .env
 ```
@@ -133,9 +137,9 @@ The main source directories are:
 ```text
 server/src/     API routes, agent runtime, tools, and integrations
 web/src/        Chat, Bot settings, app connections, computer viewer, and voice
-web/public/     Static UI assets
 tests/          Playwright integration and voice scripts
 docs/           Architecture and integration guides
+teams/          Importable crew cards (names and instructions only)
 ```
 
 ### Integration tests
@@ -152,7 +156,7 @@ The separate `tests/voice-call.mjs` script is a development harness for two-way 
 
 ### Contributing
 
-Bug reports, improvements, and pull requests are welcome. For a bug, include the steps to reproduce, expected behavior, Node version, and relevant logs with secrets removed. For larger changes, open an [issue](https://github.com/nickvasilescu/orgo-teammates/issues) first to discuss the approach.
+Bug reports, improvements, and pull requests are welcome. For a bug, include the steps to reproduce, expected behavior, Node version, and relevant logs with secrets removed. For larger changes, open an [issue](https://github.com/cruiseliner/Grok-Bot/issues) first to discuss the approach.
 
 Please report security problems privately as described in [SECURITY.md](SECURITY.md), not in issues or video comments.
 
@@ -168,10 +172,10 @@ Configuration options for idle suspension, memory consolidation, and history com
 
 ## Upgrading from grokbot-clone
 
-This project was previously published as `grokbot-clone`. GitHub redirects the old repository URL, but you can point your clone at the new one:
+This project was previously published upstream as `grokbot-clone`, then as Orgo Teammates. This fork's origin is `https://github.com/cruiseliner/Grok-Bot`. Upstream remains [nickvasilescu/orgo-teammates](https://github.com/nickvasilescu/orgo-teammates). To track this fork:
 
 ```bash
-git remote set-url origin https://github.com/nickvasilescu/orgo-teammates.git
+git remote set-url origin https://github.com/cruiseliner/Grok-Bot.git
 ```
 
 Existing installs keep working without changes:
