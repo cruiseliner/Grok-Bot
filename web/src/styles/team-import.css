@@ -1,0 +1,19 @@
+.row-menu-anchor { width: 0; height: 0; }
+.team-import {
+  position: fixed; inset: 0; z-index: 50; display: grid; place-items: center;
+  background: color-mix(in srgb, var(--color-bg-chrome) 55%, transparent); padding: 24px;
+}
+.team-import form {
+  width: min(520px, 100%); background: var(--color-bg-sidebar);
+  border: 0.5px solid var(--color-border-tertiary); border-radius: 16px; padding: 20px;
+  display: flex; flex-direction: column; gap: 10px; color: var(--color-ink);
+}
+.team-import h2 { font-size: 18px; font-weight: 600; }
+.team-import p, .team-import textarea { color: var(--color-text-secondary); font-size: 14px; line-height: 1.45; }
+.team-import textarea {
+  width: 100%; resize: vertical; min-height: 160px; border-radius: 10px; padding: 10px;
+  border: 0.5px solid var(--color-border-tertiary); background: var(--color-bg-chrome); color: var(--color-ink);
+}
+.team-import__actions { display: flex; justify-content: flex-end; gap: 8px; }
+.team-import__actions button { min-height: 36px; padding: 0 12px; border-radius: 10px; }
+.team-import__actions button[type="submit"] { background: var(--color-ink); color: var(--color-bg-chrome); }
