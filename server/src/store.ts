@@ -45,7 +45,7 @@ export const getBot = (id: string) => {
   return r ? toBot(r) : null;
 };
 export const listBots = (userId: string) =>
-  (db.prepare('SELECT * FROM bots WHERE user_id=? AND COALESCE(hidden,0)=0 ORDER BY is_primary DESC, created_at ASC').all(userId) as any[]).map(toBot);
+  (db.prepare('SELECT * FROM bots WHERE user_id=? AND COALESCE(hidden,0)=0 ORDER BY is_primary DESC, pinned DESC, updated_at DESC').all(userId) as any[]).map(toBot);
 
 export function emitBot(botId: string) {
   const r = getBotRow(botId);
